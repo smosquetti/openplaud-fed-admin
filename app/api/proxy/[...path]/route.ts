@@ -41,6 +41,10 @@ async function handle(req: NextRequest, segment: string[], method: string) {
     );
   }
 
+  if (upstream.status == 204) {
+    return new Response(null, { status: upstream.status });
+  }
+
   const text = await upstream.text();
   return new NextResponse(text, {
     status: upstream.status,
