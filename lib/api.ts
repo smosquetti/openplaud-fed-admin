@@ -51,8 +51,6 @@ function readStored(): StoredCreds | null {
   }
 }
 
-const stored = readStored();
-
 /**
  * Talks to the OpenPlaud API through the server-side proxy so the browser
  * never sees the backend URL (no CORS) and credentials stay Basic auth.
@@ -60,6 +58,8 @@ const stored = readStored();
 export async function apiFetch<T = unknown>(path: string, options: FetchOptions = {}): Promise<ApiResult<T>> {
   const { method = 'GET', body, auth } = options;
   const headers: Record<string, string> = {};
+  const stored = readStored();
+
   if (auth) {
     headers.Authorization = `Basic ${auth}`
   } else if (stored) {
