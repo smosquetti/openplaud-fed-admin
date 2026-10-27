@@ -1,3 +1,4 @@
+import { toBasicToken } from './auth';
 import type { ApiErrorBody } from './types';
 
 export class ApiError extends Error {
@@ -34,6 +35,24 @@ export interface ApiResult<T> {
   error: ApiError | null;
 }
 
+const STORAGE_KEY = 'openplaud.admin.session';
+
+interface StoredCreds {
+  username: string;
+  password: string;
+}
+
+function readStored(): StoredCreds | null {
+  try {
+    const raw = sessionStorage.getItem(STORAGE_KEY);
+    return raw ? (JSON.parse(raw) as StoredCreds) : null;
+  } catch {
+    return null;
+  }
+}
+
+const stored = readStored();
+
 /**
  * Talks to the OpenPlaud API through the server-side proxy so the browser
  * never sees the backend URL (no CORS) and credentials stay Basic auth.
@@ -41,7 +60,11 @@ export interface ApiResult<T> {
 export async function apiFetch<T = unknown>(path: string, options: FetchOptions = {}): Promise<ApiResult<T>> {
   const { method = 'GET', body, auth } = options;
   const headers: Record<string, string> = {};
-  if (auth) headers.Authorization = `Basic ${auth}`;
+  if (auth) {
+    headers.Authorization = `Basic ${auth}`
+  } else if (stored) {
+    headers.Authorization = `Basic ${toBasicToken(stored.username.trim(), stored.password)}`
+  }
   if (body !== undefined) headers['Content-Type'] = 'application/json';
 
   let res: Response;
