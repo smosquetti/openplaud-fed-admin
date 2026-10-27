@@ -1,0 +1,25 @@
+Created the Admin page for the OpenPlaud chat platform in React and Next.js, the Admin interface should only be accessible through login with an ejabberd admin account, the Admin interface must allow the user to manage the chat environment by adding Operators, Groups and adding the Operators to the Groups, the Kotlin service has endpoints for those functionalities
+
+Plan: OpenPlaud Admin — Next.js Admin Panel
+
+Stack: Next.js (App Router, TypeScript) + Bootstrap 5.3 with Material Design principles (elevation, Inter font, calm high-contrast palette). No Tailwind — custom theme CSS on top of Bootstrap.
+
+Auth flow:
+
+/login page for the ejabberd admin account (username + password)
+Calls GET /api/v1/admin/login with Basic auth; on 200 the session is established (credentials kept in sessionStorage, re-validated on page load; any 401 → back to login)
+The entire panel is behind this gate
+
+API access:
+
+Server-side proxy route (/api/proxy/[...path]) forwarding to http://localhost:8080/api/v1 — avoids CORS entirely, passes the Authorization header through, configurable via API_BASE_URL env
+
+Pages:
+
+Dashboard (/) — operator/group counts, quick links
+Operators (/operators) — table (name, email, xmppUser), "New operator" form (name, email, optional password → initialPassword shown once with copy button), delete with confirm, "View groups" modal per operator
+Groups (/groups) — table (name, room, service), "New group" form, delete with confirm, "Manage members" drawer per group: list of operators in the group, add operator (dropdown), remove member
+
+UX: sidebar shell, toasts for success/error, confirm dialogs for destructive actions, backend error JSON (409 duplicate, 422 invalid slug, 400 validation) mapped into readable toasts.
+
+Verification: next build + lint pass; dev-server smoke test.
