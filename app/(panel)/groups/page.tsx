@@ -1,7 +1,9 @@
 'use client';
 
 import { FormEvent, useCallback, useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { apiFetch } from '@/lib/api';
+import { useAuth } from '@/lib/auth';
 import type { Group } from '@/lib/types';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
 import { Icon } from '@/components/Icon';
@@ -19,6 +21,8 @@ const emptyForm: FormState = { name: '', service: 'conference' };
 
 export default function GroupsPage() {
   const toasts = useToasts();
+  const { status } = useAuth();
+  const router = useRouter();
   const [groups, setGroups] = useState<Group[] | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -38,6 +42,11 @@ export default function GroupsPage() {
   }, []);
 
   useEffect(() => {
+    if (status === 'anon') router.replace('/login');
+  }, [status, router]);
+
+  useEffect(() => {
+    if (status !== 'authed') return;
     let alive = true;
     apiFetch<Group[]>('/groups').then((res) => {
       if (!alive) return;
@@ -47,7 +56,15 @@ export default function GroupsPage() {
     return () => {
       alive = false;
     };
-  }, []);
+  }, [status]);
+
+  if (status !== 'authed') {
+    return (
+      <div className="page-center">
+        <Spinner label={status === 'checking' ? 'Connecting to the OpenPlaud API…' : 'Please wait…'} />
+      </div>
+    );
+  }
 
   function setField(field: keyof FormState, value: string) {
     setForm((f) => ({ ...f, [field]: value }));

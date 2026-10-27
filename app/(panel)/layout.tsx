@@ -1,11 +1,9 @@
 'use client';
 
-import { useEffect } from 'react';
-import { usePathname, useRouter } from 'next/navigation';
+import { usePathname } from 'next/navigation';
 import { useAuth } from '@/lib/auth';
 import { Icon } from '@/components/Icon';
 import { Logo } from '@/components/Logo';
-import { Spinner } from '@/components/Spinner';
 
 const navItems = [
   { href: '/', label: 'Dashboard', icon: 'dashboard' },
@@ -15,22 +13,7 @@ const navItems = [
 
 export default function PanelLayout({ children }: { children: React.ReactNode }) {
   const { status, username, logout } = useAuth();
-  const router = useRouter();
   const pathname = usePathname();
-
-  useEffect(() => {
-    if (status === 'anon') router.replace('/login');
-  }, [status, router]);
-
-  if (status !== 'authed') {
-    return (
-      <div className="page-center">
-        <Spinner
-          label={status === 'checking' ? 'Connecting to the OpenPlaud API…' : 'Please wait…'}
-        />
-      </div>
-    );
-  }
 
   return (
     <div className="app-shell">
@@ -54,19 +37,23 @@ export default function PanelLayout({ children }: { children: React.ReactNode })
             </a>
           ))}
         </nav>
-        <div className="sidebar-foot">
-          <div className="admin-chip">
-            <div className="avatar">{(username ?? 'A').replace('@localhost', '').charAt(0).toUpperCase() || 'A'}</div>
-            <div className="admin-meta">
-              <div className="admin-name">{username}</div>
-              <div className="admin-sub">ejabberd admin</div>
+        {status === 'authed' ? (
+          <div className="sidebar-foot">
+            <div className="admin-chip">
+              <div className="avatar">
+                {(username ?? 'A').replace('@localhost', '').charAt(0).toUpperCase() || 'A'}
+              </div>
+              <div className="admin-meta">
+                <div className="admin-name">{username}</div>
+                <div className="admin-sub">ejabberd admin</div>
+              </div>
             </div>
+            <button className="signout-btn" onClick={logout}>
+              <Icon name="logout" size={15} />
+              <span>Sign out</span>
+            </button>
           </div>
-          <button className="signout-btn" onClick={logout}>
-            <Icon name="logout" size={15} />
-            <span>Sign out</span>
-          </button>
-        </div>
+        ) : null}
       </aside>
       <main className="app-main">{children}</main>
     </div>

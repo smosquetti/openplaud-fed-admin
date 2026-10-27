@@ -1,7 +1,9 @@
 'use client';
 
 import { FormEvent, useCallback, useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { apiFetch } from '@/lib/api';
+import { useAuth } from '@/lib/auth';
 import type { CreatedOperator, Operator } from '@/lib/types';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
 import { GroupsOfOperatorModal } from '@/components/GroupsOfOperatorModal';
@@ -21,6 +23,8 @@ const emptyForm: FormState = { name: '', email: '', password: '' };
 
 export default function OperatorsPage() {
   const toasts = useToasts();
+  const { status } = useAuth();
+  const router = useRouter();
   const [operators, setOperators] = useState<Operator[] | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -43,6 +47,11 @@ export default function OperatorsPage() {
   }, []);
 
   useEffect(() => {
+    if (status === 'anon') router.replace('/login');
+  }, [status, router]);
+
+  useEffect(() => {
+    if (status !== 'authed') return;
     let alive = true;
     apiFetch<Operator[]>('/operators').then((res) => {
       if (!alive) return;
@@ -52,7 +61,15 @@ export default function OperatorsPage() {
     return () => {
       alive = false;
     };
-  }, []);
+  }, [status]);
+
+  if (status !== 'authed') {
+    return (
+      <div className="page-center">
+        <Spinner label={status === 'checking' ? 'Connecting to the OpenPlaud API…' : 'Please wait…'} />
+      </div>
+    );
+  }
 
   function setField(field: keyof FormState, value: string) {
     setForm((f) => ({ ...f, [field]: value }));

@@ -2,7 +2,9 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { apiFetch } from '@/lib/api';
+import { useAuth } from '@/lib/auth';
 import type { Group, Operator } from '@/lib/types';
 import { Icon } from '@/components/Icon';
 import { Spinner } from '@/components/Spinner';
@@ -26,6 +28,8 @@ function StatCard({ icon, label, value, hint }: { icon: 'users' | 'chat'; label:
 
 export default function DashboardPage() {
   const toasts = useToasts();
+  const { status } = useAuth();
+  const router = useRouter();
   const [operators, setOperators] = useState<Operator[] | null>(null);
   const [groups, setGroups] = useState<Group[] | null>(null);
   const [loading, setLoading] = useState(true);
@@ -42,6 +46,11 @@ export default function DashboardPage() {
   }, [toasts]);
 
   useEffect(() => {
+    if (status === 'anon') router.replace('/login');
+  }, [status, router]);
+
+  useEffect(() => {
+    if (status !== 'authed') return;
     let alive = true;
     Promise.all([apiFetch<Operator[]>('/operators'), apiFetch<Group[]>('/groups')]).then(([o, g]) => {
       if (!alive) return;
@@ -52,7 +61,15 @@ export default function DashboardPage() {
     return () => {
       alive = false;
     };
-  }, []);
+  }, [status]);
+
+  if (status !== 'authed') {
+    return (
+      <div className="page-center">
+        <Spinner label={status === 'checking' ? 'Connecting to the OpenPlaud API…' : 'Please wait…'} />
+      </div>
+    );
+  }
 
   return (
     <>

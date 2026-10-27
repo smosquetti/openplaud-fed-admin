@@ -40,13 +40,12 @@ function readStored(): StoredCreds | null {
 }
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [status, setStatus] = useState<Status>(() =>
-    typeof window === 'undefined' ? 'checking' : readStored() ? 'checking' : 'anon',
-  );
-  const [username, setUsername] = useState<string | null>(() => {
-    const stored = readStored();
-    return stored ? stored.username : null;
-  });
+  // Initial state must match the server render exactly (status 'checking',
+  // username null). The real session is resolved in the mount effect below,
+  // which runs only on the client after hydration — so SSR and the first
+  // client render always agree and no hydration mismatch is thrown.
+  const [status, setStatus] = useState<Status>('checking');
+  const [username, setUsername] = useState<string | null>(null);
 
   const logout = useCallback(() => {
     sessionStorage.removeItem(STORAGE_KEY);
@@ -70,8 +69,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     const stored = readStored();
     if (!stored) {
+      setStatus('anon');
+      setUsername(null);
       return () => setUnauthorizedHandler(null);
     }
+
+    setUsername(stored.username);
 
     let cancelled = false;
     fetch('/api/proxy/admin/login', {
